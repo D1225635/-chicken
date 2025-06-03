@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= title %></title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1><%= title %></h1>
+    <h2>雞價資料</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>日期</th>
+                <th>品種</th>
+                <th>價格</th>
+            </tr>
+        </thead>
+        <tbody>
+        <% if (chickenPrices && chickenPrices.length > 0) { %>
+            <% chickenPrices.forEach(function(row) { %>
+                <tr>
+                    <td><%= row.日期 %></td>
+                    <td><%= row.品種 %></td>
+                    <td><%= row.價格 %></td>
+                </tr>
+            <% }); %>
+        <% } else { %>
+            <tr><td colspan="3">無資料</td></tr>
+        <% } %>
+        </tbody>
+    </table>
+</body>
+</html>
+

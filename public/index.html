@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>雞肉價格查詢</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    label, select, input {
+      margin: 10px 5px;
+    }
+    #result {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    /* 用 CSS 控制 Canvas 尺寸 */
+    #priceChart {
+      width: 500px;
+      height: 300px;
+    }
+  </style>
+</head>
+<body>
+<h1>土雞價格查詢</h1>
+
+<label for="variety">選擇品種：</label>
+<select id="variety">
+  <option value="黑羽土雞舍飼(南雞)公">黑羽土雞舍飼(南雞)公</option>
+  <option value="黑羽土雞舍飼(南雞)母">黑羽土雞舍飼(南雞)母</option>
+</select><br />
+
+<label for="start">起始日期：</label>
+<input type="date" id="start" />
+<label for="end">結束日期：</label>
+<input type="date" id="end" />
+<button onclick="queryPrice()">查詢價格</button>
+<span id="dateRange" style="margin-left:10px;"></span>
+
+<div id="result">
+  <canvas id="priceChart"></canvas>
+</div>
+
+<script>
+  let chart;
+
+  async function fetchDateRange() {
+    const res = await fetch('/api/date-range');
+    const data = await res.json();
+    if (data.min && data.max) {
+      document.getElementById('dateRange').textContent = `(可查詢：${data.min} ~ ${data.max})`;
+      document.getElementById('start').setAttribute('min', data.min);
+      document.getElementById('start').setAttribute('max', data.max);
+      document.getElementById('end').setAttribute('min', data.min);
+      document.getElementById('end').setAttribute('max', data.max);
+    }
+  }
+  fetchDateRange();
+
+  async function queryPrice() {
+    const variety = document.getElementById('variety').value;
+    const start = document.getElementById('start').value;
+    const end = document.getElementById('end').value;
+
+    if (!start || !end) {
+      alert('請選擇起始與結束日期');
+      return;
+    }
+
+    const startFormatted = start.replace(/-/g, '/');
+    const endFormatted = end.replace(/-/g, '/');
+
+    const res = await fetch(`/api/query?start=${startFormatted}&end=${endFormatted}&variety=${encodeURIComponent(variety)}`);
+    const data = await res.json();
+
+    const labels = data.map(d => d.日期);
+    const prices = data.map(d => d.價格);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(document.getElementById('priceChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: `${variety} 價格走勢`,
+          data: prices,
+          borderColor: 'green',
+          backgroundColor: 'rgba(0,128,0,0.1)',
+          fill: true,
+          tension: 0.2
+        }]
+      },
+      options: {
+        responsive: false,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: false,
+            title: {
+              display: true,
+              text: '價格（元/公斤）'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: '日期'
+            }
+          }
+        }
+      }
+    });
+  }
+</script>
+</body>
+</html>
