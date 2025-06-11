@@ -9,9 +9,9 @@ const db = new sqlite3.Database(dbPath);
 
 const createTable = `
     CREATE TABLE IF NOT EXISTS chicken_price (
-                                                 日期 TEXT NOT NULL,
-                                                 品種 TEXT NOT NULL,
-                                                 價格 REAL NOT NULL
+        日期 TEXT NOT NULL,
+        品種 TEXT NOT NULL,
+        價格 REAL NOT NULL
     );
 `;
 

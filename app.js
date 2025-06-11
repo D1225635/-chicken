@@ -5,8 +5,10 @@ const app = express();
 const dbPath = require('path').join(__dirname, 'db', 'sqlite.db');
 const db = new sqlite3.Database(dbPath);
 const axios = require('axios');
+const indexRouter = require('./routes/index');
 
 app.use(express.static('public'));
+app.use('/', indexRouter);
 
 app.get('/api/query', (req, res) => {
     const { start, end, variety } = req.query;

@@ -2,118 +2,587 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>雞肉價格查詢</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>雞肉價格查詢系統</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', 'Microsoft JhengHei', Arial, sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
       padding: 20px;
     }
-    label, select, input {
-      margin: 10px 5px;
-    }
-    #result {
-      max-width: 500px;
+
+    .container {
+      max-width: 1200px;
       margin: 0 auto;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid #e1e8ed;
     }
-    /* 用 CSS 控制 Canvas 尺寸 */
+
+    .header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+      transform: rotate(45deg);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+      position: relative;
+      z-index: 1;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .form-section {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 25px;
+      align-items: end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-group select,
+    .form-group input {
+      padding: 12px 15px;
+      border: 2px solid #e1e8ed;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: white;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .date-info {
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    .query-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .query-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+
+    .query-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .query-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .query-btn:hover::before {
+      left: 100%;
+    }
+
+    .result-section {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-container {
+      position: relative;
+      margin: 20px 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 12px;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     #priceChart {
-      width: 500px;
-      height: 300px;
+      max-width: 100%;
+      height: 400px !important;
+      border-radius: 8px;
+    }
+
+    .no-data {
+      text-align: center;
+      color: #e74c3c;
+      font-size: 1.2rem;
+      font-weight: 600;
+      padding: 40px;
+      background: linear-gradient(135deg, #ffebee 0%, #fce4ec 100%);
+      border-radius: 12px;
+      border: 2px dashed #e74c3c;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #667eea;
+      font-size: 1.1rem;
+      padding: 20px;
+    }
+
+    .loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #667eea;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .content {
+        padding: 20px;
+      }
+
+      .form-section {
+        padding: 20px;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .query-btn {
+        width: 100%;
+        margin-top: 20px;
+      }
+
+      .chart-container {
+        padding: 10px;
+        min-height: 300px;
+      }
+
+      #priceChart {
+        height: 300px !important;
+      }
+    }
+
+    /* 動畫效果 */
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 美化滾動條 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
     }
   </style>
 </head>
 <body>
-<h1>土雞價格查詢</h1>
+<div class="container">
+  <div class="header">
+    <h1>🐔 土雞價格查詢系統</h1>
+    <p>農委會即時資料 • 專業的農產品價格追蹤平台</p>
+  </div>
 
-<label for="variety">選擇品種：</label>
-<select id="variety">
-  <option value="黑羽土雞舍飼(南雞)公">黑羽土雞舍飼(南雞)公</option>
-  <option value="黑羽土雞舍飼(南雞)母">黑羽土雞舍飼(南雞)母</option>
-</select><br />
+  <div class="content">
+    <div class="form-section fade-in">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="variety">🐓 選擇品種</label>
+          <select id="variety">
+            <option value="黑羽土雞舍飼(南雞)公">黑羽土雞舍飼(南雞)公</option>
+            <option value="黑羽土雞舍飼(南雞)母">黑羽土雞舍飼(南雞)母</option>
+          </select>
+        </div>
 
-<label for="start">起始日期：</label>
-<input type="date" id="start" />
-<label for="end">結束日期：</label>
-<input type="date" id="end" />
-<button onclick="queryPrice()">查詢價格</button>
-<span id="dateRange" style="margin-left:10px;"></span>
 
-<div id="result">
-  <canvas id="priceChart"></canvas>
+
+        <div class="form-group">
+          <label for="start">📅 起始日期</label>
+          <input type="date" id="start" />
+        </div>
+
+        <div class="form-group">
+          <label for="end">📅 結束日期</label>
+          <input type="date" id="end" />
+          <div class="date-info" id="dateRange"></div>
+        </div>
+
+        <div class="form-group">
+          <button class="query-btn" onclick="queryPrice()">
+            <span>查詢價格趨勢</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-section fade-in">
+      <div class="loading" id="loading">正在查詢資料中...</div>
+      <div class="chart-container" id="result">
+        <canvas id="priceChart"></canvas>
+        <div class="no-data" id="nodata" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
   let chart;
 
   async function fetchDateRange() {
-    const res = await fetch('/api/date-range');
-    const data = await res.json();
-    if (data.min && data.max) {
-      document.getElementById('dateRange').textContent = `(可查詢：${data.min} ~ ${data.max})`;
-      document.getElementById('start').setAttribute('min', data.min);
-      document.getElementById('start').setAttribute('max', data.max);
-      document.getElementById('end').setAttribute('min', data.min);
-      document.getElementById('end').setAttribute('max', data.max);
+    let url = '/api/crawl';
+    let min, max;
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        min = data[data.length - 1].日期;
+        max = data[0].日期;
+      }
+
+      if (min && max) {
+        document.getElementById('dateRange').textContent = `可查詢範圍：${min} ~ ${max}`;
+        document.getElementById('start').setAttribute('min', min);
+        document.getElementById('start').setAttribute('max', max);
+        document.getElementById('end').setAttribute('min', min);
+        document.getElementById('end').setAttribute('max', max);
+      }
+    } catch (error) {
+      console.error('獲取日期範圍失敗:', error);
+      document.getElementById('dateRange').textContent = '無法獲取日期範圍';
     }
   }
-  fetchDateRange();
+
+  document.addEventListener('DOMContentLoaded', fetchDateRange);
 
   async function queryPrice() {
     const variety = document.getElementById('variety').value;
     const start = document.getElementById('start').value;
     const end = document.getElementById('end').value;
 
+    const loadingEl = document.getElementById('loading');
+    const nodataEl = document.getElementById('nodata');
+    const chartEl = document.getElementById('priceChart');
+
+    // 重置顯示狀態
+    loadingEl.style.display = 'none';
+    nodataEl.style.display = 'none';
+    chartEl.style.display = 'block';
+
     if (!start || !end) {
-      alert('請選擇起始與結束日期');
+      alert('⚠️ 請選擇起始與結束日期');
       return;
     }
+
+    if (new Date(start) > new Date(end)) {
+      alert('⚠️ 起始日期不能大於結束日期');
+      return;
+    }
+
+    // 顯示載入狀態
+    loadingEl.style.display = 'block';
+    chartEl.style.display = 'none';
 
     const startFormatted = start.replace(/-/g, '/');
     const endFormatted = end.replace(/-/g, '/');
 
-    const res = await fetch(`/api/query?start=${startFormatted}&end=${endFormatted}&variety=${encodeURIComponent(variety)}`);
-    const data = await res.json();
+    const url = `/api/crawl?start=${startFormatted}&end=${endFormatted}&variety=${encodeURIComponent(variety)}`;
 
-    const labels = data.map(d => d.日期);
-    const prices = data.map(d => d.價格);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
 
-    if (chart) chart.destroy();
+      // 隱藏載入狀態
+      loadingEl.style.display = 'none';
 
-    chart = new Chart(document.getElementById('priceChart'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: `${variety} 價格走勢`,
-          data: prices,
-          borderColor: 'green',
-          backgroundColor: 'rgba(0,128,0,0.1)',
-          fill: true,
-          tension: 0.2
-        }]
-      },
-      options: {
-        responsive: false,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: false,
-            title: {
+      if (!Array.isArray(data) || data.length === 0) {
+        if (chart) chart.destroy();
+        chartEl.style.display = 'none';
+        nodataEl.style.display = 'block';
+        nodataEl.textContent = '📊 查無符合條件的資料';
+        return;
+      }
+
+      const labels = data.map(d => d.日期);
+      const prices = data.map(d => d.價格);
+
+      // 確保數據按日期順序排列（從舊到新）
+      const sortedData = data.sort((a, b) => new Date(a.日期) - new Date(b.日期));
+      const sortedLabels = sortedData.map(d => d.日期);
+      const sortedPrices = sortedData.map(d => d.價格);
+
+      if (chart) chart.destroy();
+
+      chartEl.style.display = 'block';
+
+      chart = new Chart(document.getElementById('priceChart'), {
+        type: 'line',
+        data: {
+          labels: sortedLabels,
+          datasets: [{
+            label: `${variety} 價格走勢`,
+            data: sortedPrices,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.15)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 3,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 3,
+            pointRadius: 6,
+            pointHoverRadius: 10,
+            pointHoverBackgroundColor: '#4c63d2',
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 3,
+            segment: {
+              borderColor: ctx => {
+                // 根據數據變化添加顏色變化
+                const prev = ctx.p0.parsed.y;
+                const curr = ctx.p1.parsed.y;
+                return curr > prev ? '#27ae60' : curr < prev ? '#e74c3c' : '#667eea';
+              }
+            }
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
               display: true,
-              text: '價格（元/公斤）'
+              position: 'top',
+              labels: {
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                },
+                color: '#2c3e50',
+                usePointStyle: true,
+                pointStyle: 'line'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(44, 62, 80, 0.95)',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: '#667eea',
+              borderWidth: 2,
+              cornerRadius: 10,
+              displayColors: true,
+              callbacks: {
+                title: function(context) {
+                  return `日期: ${context[0].label}`;
+                },
+                label: function(context) {
+                  return `價格: ${context.parsed.y} 元/公斤`;
+                },
+                afterLabel: function(context) {
+                  // 顯示與前一天的價格變化
+                  if (context.dataIndex > 0) {
+                    const prev = context.dataset.data[context.dataIndex - 1];
+                    const curr = context.parsed.y;
+                    const change = curr - prev;
+                    const changePercent = ((change / prev) * 100).toFixed(2);
+                    const arrow = change > 0 ? '↗' : change < 0 ? '↘' : '→';
+                    return `變化: ${arrow} ${change > 0 ? '+' : ''}${change.toFixed(2)} 元 (${changePercent}%)`;
+                  }
+                  return '';
+                }
+              }
             }
           },
-          x: {
-            title: {
-              display: true,
-              text: '日期'
+          scales: {
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: '價格（元/公斤）',
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                },
+                color: '#2c3e50'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.1)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#7f8c8d',
+                font: {
+                  size: 12
+                },
+                callback: function(value) {
+                  return value.toFixed(1);
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: '日期',
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                },
+                color: '#2c3e50'
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+                drawBorder: false
+              },
+              ticks: {
+                color: '#7f8c8d',
+                font: {
+                  size: 12
+                },
+                maxTicksLimit: 12,
+                maxRotation: 45
+              }
             }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeInOutQuart'
           }
         }
-      }
-    });
+      });
+
+    } catch (error) {
+      loadingEl.style.display = 'none';
+      chartEl.style.display = 'none';
+      nodataEl.style.display = 'block';
+      nodataEl.textContent = '❌ 查詢失敗，請稍後再試';
+      console.error('查詢價格失敗:', error);
+    }
   }
+
+  // 添加鍵盤事件支持
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter' && (event.target.tagName === 'INPUT' || event.target.tagName === 'SELECT')) {
+      queryPrice();
+    }
+  });
 </script>
 </body>
 </html>

@@ -6,3 +6,24 @@ body {
 a {
   color: #00B7FF;
 }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 25px;
+  align-items: end;
+}
+
+.form-grid .form-group:last-child {
+  align-self: end;
+}
+.form-group {
+  position: relative;
+}
+
+.date-info {
+  position: absolute;
+  bottom: -1.4em; /* 你可以依實際位置調整 */
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+}
